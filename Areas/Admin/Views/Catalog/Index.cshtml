@@ -1,0 +1,306 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+@using PagedList
+@using PagedList.Mvc
+<script src="~/Scripts/jquery-1.10.2.js"></script>
+<script src="~/Scripts/bootstrap.js"></script>
+<link href="~/Content/bootstrap.css" rel="stylesheet" />
+<link href="~/Content/StyleTest.css" rel="stylesheet" />
+<div>
+    
+    <div>
+        <div class="col-md-6">
+            <h2>Danh Mục Sản Phẩm</h2>
+            <input class="form-control" id="myInput" style="margin-bottom:10px" type="text" placeholder="Search..">
+        </div>
+        <div class="col-md-6 pull-right" style="padding-top:50px;padding-bottom:15px">
+            <button type="button" class="btn btn-info" data-toggle="modal" data-target="#myModal" onclick="clearTextBox();">Add New</button>
+            @*<button type="button" class="btn btn-primary" id="btnExport">Export To Excel</button>*@
+            <d class="tesst">
+                @Html.ActionLink("ExportToExcel", "ExportToExcel", "Catalog")
+            </d>
+        </div>
+    </div>
+    <table class="table table-bordered table-striped table-hover" id="tblCustomers">
+        <thead>
+            <tr>
+                <th>
+                    ID
+                </th>
+                <th>
+                    TÊN LOGO
+                </th>
+                <th>
+                    LOGO
+                </th>
+                <th>
+                    TRẠNG THÁI
+                </th>
+                <th style="text-align:center">
+                    Action
+                </th>
+            </tr>
+        </thead>
+        <tbody class="tbody" id="myTable"></tbody>
+    </table>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                @*<button type="button" class="close" data-dissmiss="modal"><span aria-hidden="true">×</span></button>*@
+                <button type="button" class="close" data-dismiss="modal">×</button>
+                <h4 class="modal-title" id="myModalLabel">Add Catalog</h4>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="Catalogs_id">ID</label>
+                        <input type="text" class="form-control" id="Catalogs_id" placeholder="Id" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Catalogs_name">Tên </label>
+                        <input type="text" class="form-control" id="Catalogs_name" placeholder="Catalogs_name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Catalogs_image">Logo</label>
+                        <input type="text" class="form-control" id="Catalogs_image" style="display:none" placeholder="Catalogs_image" />
+                        <input id="inp" type='file'>
+                        <p id="Catalogs_image"></p>
+                        <img id="img" height="150">
+                    </div>
+                    <div class="form-group">
+                        <label for="Catalogs_Status">Trạng Thái</label>
+                        <input type="text" class="form-control" id="Catalogs_Status" placeholder="Catalogs_Status" />
+                    </div>
+                    @*<div class="form-group">
+                            <label for="Country">Country</label>
+                            <input type="text" class="form-control" id="Country" placeholder="Country" />
+                        </div>*@
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnAdd" onclick="return Add();">Add</button>
+                <button type="button" class="btn btn-primary" id="btnUpdate" style="display:none;" onclick="Update();">Update</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/Assets/Admin/jquery.table2excel.js"></script>
+<script>
+    $(function () {
+        loadData();
+        $("#btnExport").click(function () {
+            $("#tblCustomers").table2excel({
+                filename: "Table.xls"
+            });
+        });
+    });
+
+    function readFile() {
+        if (this.files && this.files[0]) {
+            var FR = new FileReader();
+            FR.addEventListener("load", function (e) {
+                document.getElementById("img").src = e.target.result;
+                document.getElementById("Catalogs_image").value = e.target.result;
+            });
+            FR.readAsDataURL(this.files[0]);
+        }
+    }
+    //function func() {
+    //    document.getElementById("Catalogs_image").value = document.getElementById("inp").value;
+    //}
+    document.getElementById("inp").addEventListener("change", readFile);
+
+    $(document).ready(function () {
+        $("#myInput").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#myTable tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    //Load Data in Table when documents is ready
+    $(document).ready(function () {
+        loadData();
+    });
+
+    //Load Data function
+    function loadData() {
+        $.ajax({
+            url: "/Catalog/List",
+            type: "GET",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                var html = '';
+                $.each(result, function (key, item) {
+                    html += '<tr>';
+                    html += '<td>' + item.Catalogs_id + '</td>';
+                    html += '<td>' + item.Catalogs_name + '</td>';
+                    html += '<td><img style="width:100px" src="' + item.Catalogs_image + '"/></td>';
+                    var toBoolean = item.Catalogs_Status ? 'Active' : 'Blocked';
+                    html += '<td>' + toBoolean + '</td>';
+                    html += '<td style="text-align:center;"><button class="btn btn-danger" onclick="return getbyID(' + item.Catalogs_id + ')">Edit</button> | <button class="btn btn-warning" onclick="Delele(' + item.Catalogs_id + ')">Delete</button></td>';
+                    html += '</tr>';
+                });
+                $('.tbody').html(html);
+            },
+            error: function (errormessage) {
+                alert(errormessage.responseText);
+            }
+        });
+    }
+    //Add Data Function
+    function Add() {
+        var res = validate();
+        loadData();
+        document.getElementById("img").src = null;
+        if (res == false) {
+            return false;
+        }
+        var empObj = {
+            Catalogs_id: $('#Catalogs_id').val(),
+            Catalogs_name: $('#Catalogs_name').val(),
+            Catalogs_image: $('#Catalogs_image').val(),
+            Catalogs_Status: $('#Catalogs_Status').val(),
+        };
+        $.ajax({
+            url: "/Catalog/Add",
+            data: JSON.stringify(empObj),
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                loadData();
+                $('#myModal').modal('hide')
+                alert("Thêm thành công !");
+            },
+            error: function (errormessage) {
+                alert(errormessage.responseText);
+            }
+        });
+    }
+
+    //Function for getting the Data Based upon Catalog ID
+    function getbyID(EmpID) {
+        $('#Catalogs_id').css('border-color', 'lightgrey');
+        $('#Catalogs_name').css('border-color', 'lightgrey');
+        $('#Catalogs_image').css('border-color', 'lightgrey');
+        $('#Catalogs_Status').css('border-color', 'lightgrey');
+        $.ajax({
+            url: "/Catalog/getbyID/" + EmpID,
+            type: "GET",
+            contentType: "application/json;charset=UTF-8",
+            dataType: "json",
+            success: function (result) {
+                $('#Catalogs_id').val(result.Catalogs_id);
+                $('#Catalogs_name').val(result.Catalogs_name);
+                $('#Catalogs_image').val(result.Catalogs_image);
+                document.getElementById("img").src = result.Catalogs_image;
+                $('#Catalogs_Status').val(result.Catalogs_Status);
+                $('#myModal').modal('show');
+                $('#btnUpdate').show();
+                $('#btnAdd').hide();
+            },
+            error: function (errormessage) {
+                alert(errormessage.responseText);
+            }
+        });
+        return false;
+    }
+
+    //function for updating Catalog record
+    function Update() {
+        var res = validate();
+        if (res == false) {
+            return false;
+        }
+        var empObj = {
+            Catalogs_id: $('#Catalogs_id').val(),
+            Catalogs_name: $('#Catalogs_name').val(),
+            Catalogs_image: $('#Catalogs_image').val(),
+            Catalogs_Status: $('#Catalogs_Status').val(),
+        };
+        $.ajax({
+            url: "/Catalog/Update",
+            data: JSON.stringify(empObj),
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                loadData();
+                $('#myModal').modal('hide');
+                $('#Catalogs_id').val($('#Catalogs_id').val());
+                $('#Catalogs_name').val($('#Catalogs_name').val());
+                $('#Catalogs_image').val($('#Catalogs_image').val());
+                $('#Catalogs_Status').val($('#Catalogs_Status').val())
+                alert("Sửa bản ghi thành công !");
+            },
+            error: function (errormessage) {
+                alert(errormessage.responseText);
+            }
+        });
+    }
+    //function for deleting employee's record
+    function Delele(ID) {
+        var ans = confirm("Bạn có chắc chắn muốn xóa dòng này không ?");
+        if (ans) {
+            $.ajax({
+                url: "/Catalog/Delete/" + ID,
+                type: "POST",
+                contentType: "application/json;charset=UTF-8",
+                dataType: "json",
+                success: function (result) {
+                    loadData();
+                    alert("Xóa bản ghi thành công !");
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+    }
+    //Function for clearing the textboxes
+    function clearTextBox() {
+        $('#Catalogs_id').val("");
+        $('#Catalogs_name').val("");
+        $('#Catalogs_image').val("");
+        $('#Catalogs_Status').val("");
+        $('#btnUpdate').hide();
+        $('#btnAdd').show();
+        $('#Catalogs_name').css('border-color', 'lightgrey');
+        $('#Catalogs_image').css('border-color', 'lightgrey');
+        $('#Catalogs_Status').css('border-color', 'lightgrey');
+    }
+    // Valdidation using jquery
+    function validate() {
+        var isValid = true;
+        if ($('#Catalogs_name').val().trim() == "") {
+            $('#Catalogs_name').css('border-color', 'Red');
+            isValid = false;
+        }
+        else {
+            $('#Catalogs_name').css('border-color', 'lightgrey');
+        }
+        if ($('#Catalogs_image').val().trim() == "") {
+            $('#Catalogs_image').css('border-color', 'Red');
+            isValid = false;
+        }
+        else {
+            $('#Catalogs_image').css('border-color', 'lightgrey');
+        }
+        if ($('#Catalogs_Status').val().trim() == "") {
+            $('#Catalogs_Status').css('border-color', 'Red');
+            isValid = false;
+        }
+        else {
+            $('#Catalogs_Status').css('border-color', 'lightgrey');
+        }
+        return isValid;
+    }
+</script>
